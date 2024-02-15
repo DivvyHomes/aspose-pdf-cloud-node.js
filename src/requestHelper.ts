@@ -1,4 +1,4 @@
- /**
+/**
  *
  * Copyright (c) 2023 Aspose.PDF Cloud
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,7 +19,7 @@
  *
  */
 
-import request = require("request");
+import * as request from "request";
 import { Configuration } from "./configuration";
 import { ObjectSerializer } from "./objectSerializer";
 var superagent = require("superagent");
@@ -30,15 +30,30 @@ var superagent = require("superagent");
  * @param confguration api configuration
  * @param notApplyAuthToRequest if setted to true, auth is not applied to request
  */
-export async function invokeApiMethod(requestOptions: request.Options, confguration: Configuration, notApplyAuthToRequest?: boolean, postData?: Buffer): Promise<request.RequestResponse> {
-    try {
-        return await invokeApiMethodInternal(requestOptions, confguration, notApplyAuthToRequest, postData);
-    } catch (e) {
-        if (e instanceof NeedRepeatException) {
-            return await invokeApiMethodInternal(requestOptions, confguration, notApplyAuthToRequest, postData);
-        }
-        throw e;
+export async function invokeApiMethod(
+  requestOptions: request.Options,
+  confguration: Configuration,
+  notApplyAuthToRequest?: boolean,
+  postData?: Buffer
+): Promise<request.RequestResponse> {
+  try {
+    return await invokeApiMethodInternal(
+      requestOptions,
+      confguration,
+      notApplyAuthToRequest,
+      postData
+    );
+  } catch (e) {
+    if (e instanceof NeedRepeatException) {
+      return await invokeApiMethodInternal(
+        requestOptions,
+        confguration,
+        notApplyAuthToRequest,
+        postData
+      );
     }
+    throw e;
+  }
 }
 
 /**
@@ -48,18 +63,23 @@ export async function invokeApiMethod(requestOptions: request.Options, confgurat
  * @param parameterName parameterName
  * @param parameterValue parameterValue
  */
-export function addQueryParameterToUrl(url, queryParameters, parameterName, parameterValue) {
-    if (parameterValue !== undefined) {
-        if (url.indexOf("{" + parameterName + "}") >= 0) {
-            url = url.replace("{" + parameterName + "}", String(parameterValue));
-        } else {
-            queryParameters[parameterName] = String(parameterValue);
-        }
+export function addQueryParameterToUrl(
+  url,
+  queryParameters,
+  parameterName,
+  parameterValue
+) {
+  if (parameterValue !== undefined) {
+    if (url.indexOf("{" + parameterName + "}") >= 0) {
+      url = url.replace("{" + parameterName + "}", String(parameterValue));
     } else {
-        url = url.replace("/{" + parameterName + "}", "");
+      queryParameters[parameterName] = String(parameterValue);
     }
+  } else {
+    url = url.replace("/{" + parameterName + "}", "");
+  }
 
-    return url;
+  return url;
 }
 
 /**
@@ -68,79 +88,86 @@ export function addQueryParameterToUrl(url, queryParameters, parameterName, para
  * @param confguration api configuration
  * @param notApplyAuthToRequest if setted to true, auth is not applied to request
  */
-async function invokeApiMethodInternal(requestOptions: request.Options, confguration: Configuration, notApplyAuthToRequest?: boolean, postData?: Buffer): Promise<request.RequestResponse> {
-    let sa = superagent(requestOptions.method, requestOptions["uri"]);
-    
-    const auth = confguration.authentication;
-    if (!notApplyAuthToRequest) {
-        await auth.applyToRequest(requestOptions, confguration);
-    } 
-    
-    if (requestOptions.form) {
-        sa.type('form');
-        sa.send(requestOptions.form);       
-    } else if(postData) {
-        sa.type('application/octet-stream');
-        sa.set("Content-Length", postData.length);
-        sa.send(postData);
-    } else if (requestOptions.body) {
-        sa.send(requestOptions.body);
-    }
+async function invokeApiMethodInternal(
+  requestOptions: request.Options,
+  confguration: Configuration,
+  notApplyAuthToRequest?: boolean,
+  postData?: Buffer
+): Promise<request.RequestResponse> {
+  let sa = superagent(requestOptions.method, requestOptions["uri"]);
 
-    // query params
-    sa.query(requestOptions.qs);
-    
-    //headers
-    sa.set("User-Agent", "pdf nodejs sdk");
-    sa.set("x-aspose-client", "nodejs sdk");  
-    sa.set("x-aspose-client-version", "24.1.0");
+  const auth = confguration.authentication;
+  if (!notApplyAuthToRequest) {
+    await auth.applyToRequest(requestOptions, confguration);
+  }
 
-    if (!requestOptions.headers) {
-        requestOptions.headers = {};
-    } 
-    
-    if (!notApplyAuthToRequest) {
-        sa.set("Authorization", requestOptions.headers.Authorization);
-    }
-    
-    if (requestOptions.json){
-        sa.accept('json');
-    } else {
-        sa.responseType('blob')
-    }
+  if (requestOptions.form) {
+    sa.type("form");
+    sa.send(requestOptions.form);
+  } else if (postData) {
+    sa.type("application/octet-stream");
+    sa.set("Content-Length", postData.length);
+    sa.send(postData);
+  } else if (requestOptions.body) {
+    sa.send(requestOptions.body);
+  }
 
-    return new Promise<request.RequestResponse>((resolve, reject) => {
-        sa.catch(async err => {
-            if (err.status === 401 && !notApplyAuthToRequest) {
-                await auth.handle401response(confguration);
-                reject(new NeedRepeatException());
-            } else {
-                reject(err);
-            }            
-        });
-        
-        sa.then(async (response) => {
-            if (response.status >= 200 && response.status <= 299) {
-                resolve(response);
-            } else {
-                try {
-                    let bodyContent = response.body;
-                    if (bodyContent instanceof Buffer) {
-                        bodyContent = JSON.parse(bodyContent.toString("utf8"));
-                    }
+  // query params
+  sa.query(requestOptions.qs);
 
-                    const result = ObjectSerializer.deserialize(bodyContent, "SaaSposeResponse");
-                    reject({ message: result.message, code: response.status });
-                } catch (error) {
-                    reject({ message: "Error while parse server error: " + error });
-                }
-            } 
-        }); 
+  //headers
+  sa.set("User-Agent", "pdf nodejs sdk");
+  sa.set("x-aspose-client", "nodejs sdk");
+  sa.set("x-aspose-client-version", "24.1.0");
+
+  if (!requestOptions.headers) {
+    requestOptions.headers = {};
+  }
+
+  if (!notApplyAuthToRequest) {
+    sa.set("Authorization", requestOptions.headers.Authorization);
+  }
+
+  if (requestOptions.json) {
+    sa.accept("json");
+  } else {
+    sa.responseType("blob");
+  }
+
+  return new Promise<request.RequestResponse>((resolve, reject) => {
+    sa.catch(async (err) => {
+      if (err.status === 401 && !notApplyAuthToRequest) {
+        await auth.handle401response(confguration);
+        reject(new NeedRepeatException());
+      } else {
+        reject(err);
+      }
     });
+
+    sa.then(async (response) => {
+      if (response.status >= 200 && response.status <= 299) {
+        resolve(response);
+      } else {
+        try {
+          let bodyContent = response.body;
+          if (bodyContent instanceof Buffer) {
+            bodyContent = JSON.parse(bodyContent.toString("utf8"));
+          }
+
+          const result = ObjectSerializer.deserialize(
+            bodyContent,
+            "SaaSposeResponse"
+          );
+          reject({ message: result.message, code: response.status });
+        } catch (error) {
+          reject({ message: "Error while parse server error: " + error });
+        }
+      }
+    });
+  });
 }
 
 /**
  * Exception, indicating necessity of request repeat
  */
-class NeedRepeatException extends Error {
-}
+class NeedRepeatException extends Error {}

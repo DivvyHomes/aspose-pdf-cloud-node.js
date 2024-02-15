@@ -1,4 +1,4 @@
- /**
+/**
  *
  * Copyright (c) 2023 Aspose.PDF Cloud
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,7 +19,7 @@
  *
  */
 
-import request = require("request");
+import * as request from "request";
 import { Configuration } from "./configuration";
 import { invokeApiMethod } from "./requestHelper";
 
@@ -27,63 +27,70 @@ import { invokeApiMethod } from "./requestHelper";
  * Authentication logic for api calls
  */
 export interface IAuthentication {
-    /**
-     * Apply authentication settings to header and query params.
-     */
-    applyToRequest(requestOptions: request.Options, configuration: Configuration): void;
+  /**
+   * Apply authentication settings to header and query params.
+   */
+  applyToRequest(
+    requestOptions: request.Options,
+    configuration: Configuration
+  ): void;
 
-    /**
-     * Handle 401 response.
-     */
-    handle401response(configuration: Configuration);
+  /**
+   * Handle 401 response.
+   */
+  handle401response(configuration: Configuration);
 }
 
 /**
- * Implements OAuth authentication 
+ * Implements OAuth authentication
  */
 export class OAuth implements IAuthentication {
-    private accessToken: string;
+  private accessToken: string;
 
-     /**
-      * Apply authentication settings to header and query params.
-      */
-    public async applyToRequest(requestOptions: request.Options, configuration: Configuration): Promise<void> {
-        if (this.accessToken == null) {
-            await this._requestToken(configuration);
-        }
-
-        if (requestOptions && requestOptions.headers) {
-            requestOptions.headers.Authorization = "Bearer " + this.accessToken;
-        }
-
-        return Promise.resolve();
+  /**
+   * Apply authentication settings to header and query params.
+   */
+  public async applyToRequest(
+    requestOptions: request.Options,
+    configuration: Configuration
+  ): Promise<void> {
+    if (this.accessToken == null) {
+      await this._requestToken(configuration);
     }
 
-    /**
-     * Handle 401 response.
-     */
-    public async handle401response(configuration: Configuration) {
-        await this._requestToken(configuration);
+    if (requestOptions && requestOptions.headers) {
+      requestOptions.headers.Authorization = "Bearer " + this.accessToken;
     }
 
-    private async _requestToken(configuration: Configuration): Promise<void> {
-        console.log("baseUrl: " + configuration.baseUrl);
-        var tokenUrl = configuration.baseUrl.replace("/v3.0", "") + "/connect/token";
-        console.log("tokenUrl: " + tokenUrl);
-        const requestOptions: request.Options = {
-            method: "POST",
-            json: true,
-            uri: tokenUrl,
-            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-            form: {
-                grant_type: "client_credentials",
-                client_id: configuration.appSID,
-                client_secret: configuration.appKey,
-            },
-        };
-        
-        const response = await invokeApiMethod(requestOptions, configuration, true);
-        this.accessToken = response.body.access_token;
-        return Promise.resolve();
-    }
+    return Promise.resolve();
+  }
+
+  /**
+   * Handle 401 response.
+   */
+  public async handle401response(configuration: Configuration) {
+    await this._requestToken(configuration);
+  }
+
+  private async _requestToken(configuration: Configuration): Promise<void> {
+    console.log("baseUrl: " + configuration.baseUrl);
+    var tokenUrl =
+      configuration.baseUrl.replace("/v3.0", "") + "/connect/token";
+    console.log("tokenUrl: " + tokenUrl);
+    const requestOptions: request.Options = {
+      method: "POST",
+      json: true,
+      uri: tokenUrl,
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      form: {
+        grant_type: "client_credentials",
+        client_id: configuration.appSID,
+        client_secret: configuration.appKey,
+      },
+    };
+
+    const response = await invokeApiMethod(requestOptions, configuration, true);
+    this.accessToken = response.body.access_token;
+    return Promise.resolve();
+  }
 }
